@@ -4,10 +4,9 @@ kind: Kustomization
 namespace: monitoring
 
 resources:
-- namespace.yml
-#- loki/
-#- prometheus/
-#- promtail/
-#- tempo/
-#- mimir/
-- grafana/
+  - namespace.yml
+  - otel-collector/
+  - grafana/
+  - loki/
+  - tempo/
+  - minio

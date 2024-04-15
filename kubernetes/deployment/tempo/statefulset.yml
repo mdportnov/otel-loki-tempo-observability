@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tempo
+  labels:
+    app.kubernetes.io/name: tempo
+  annotations:
+    prometheus.io/port: prom-metrics
+    prometheus.io/scrape: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+  serviceName: tempo-headless
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tempo
+    spec:
+      serviceAccountName: tempo
+      automountServiceAccountToken: false
+      containers:
+        - args:
+            - -config.file=/conf/tempo.yaml
+            - -mem-ballast-size-mbs=1024
+          image: grafana/tempo:2.4.1
+          imagePullPolicy: IfNotPresent
+          name: tempo
+          ports:
+            - containerPort: 3100
+              name: prom-metrics
+            - containerPort: 4317
+              name: otlp-grpc
+            - containerPort: 4318
+              name: otlp-http
+          resources:
+            requests:
+              cpu: 100m
+              memory: "1Gi"
+            limits:
+              cpu: 100m
+              memory: "1Gi"
+          volumeMounts:
+            - name: tempo-conf-vol
+              mountPath: /conf
+            - name: tempo-storage
+              mountPath: /var/tempo/wal
+              subPath: wal
+            - name: tempo-storage
+              mountPath: /var/tempo/traces
+              subPath: traces
+            - name: tempo-storage
+              mountPath: /var/tempo/generator/wal
+              subPath: generator
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: tempo-storage
+          emptyDir:
+            sizeLimit: "10Gi"
+        - name: tempo-conf-vol
+          configMap:
+            name: tempo-conf
+            items:
+              - key: tempo.yaml
+                path: tempo.yaml

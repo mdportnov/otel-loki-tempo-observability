@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: opentelemetry
+    component: otel-collector-conf
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+          grpc:
+    
+    processors:
+      batch: # batch metrics before sending to reduce API usage
+        timeout: 3s
+    
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:8889" # setup later
+      logging:
+        loglevel: debug
+      otlp:
+        endpoint: "http://tempo:4317"
+        tls:
+          insecure: true
+      loki:
+        endpoint: "http://loki:3100/loki/api/v1/push"
+    
+    extensions:
+      health_check:
+      zpages:
+
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+      extensions: [ health_check, zpages ]
+      pipelines:
+        metrics:
+          receivers: [ otlp ]
+          processors: [ batch ]
+          exporters: [ prometheus ]
+        traces:
+          receivers: [ otlp ]
+          processors: [ batch ]
+          exporters: [ otlp ]
+        logs:
+          receivers: [ otlp ]
+          exporters: [ loki ]
