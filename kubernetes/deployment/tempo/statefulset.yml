@@ -22,8 +22,8 @@ spec:
       automountServiceAccountToken: false
       containers:
         - args:
-            - -config.file=/conf/tempo.yaml
-            - -mem-ballast-size-mbs=1024
+            - '--config.file=/conf/tempo.yaml'
+            - '--mem-ballast-size-mbs=1024'
           image: grafana/tempo:2.4.1
           imagePullPolicy: IfNotPresent
           name: tempo
@@ -40,7 +40,7 @@ spec:
               memory: "1Gi"
             limits:
               cpu: 100m
-              memory: "1Gi"
+              memory: "2Gi"
           volumeMounts:
             - name: tempo-conf-vol
               mountPath: /conf

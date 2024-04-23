@@ -1,39 +1,63 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: tempo-conf
-    labels:
-        app.kubernetes.io/name: tempo
+  name: tempo-conf
+  labels:
+    app.kubernetes.io/name: tempo
 data:
-    tempo.yaml: |
-      server:
-        http_listen_port: 3200
-      
-      distributor:
-        log_received_spans:
-          enabled: true # for debugging
-        receivers:
-          otlp:
-            protocols:
-              http:
-              grpc:
-      
-      ingester:
-        max_block_duration: 5m # cut the headblock when this much time passes
-      
-      compactor:
-        compaction:
-          block_retention: 1h # overall Tempo trace retention
-      
+  tempo.yaml: |
+    server:
+      http_listen_port: 3200
+    
+    distributor:
+      log_received_spans:
+        enabled: true # for debugging
+      receivers:
+        otlp:
+          protocols:
+            http:
+            grpc:
+    
+    ingester:
+      max_block_duration: 5m # cut the headblock when this much time passes
+    
+    compactor:
+      compaction:
+        block_retention: 1h # overall Tempo trace retention
+    
+    metrics_generator: # enable to see trace related metrics in Grafana Dashboards
+      registry:
+        external_labels:
+          source: tempo
       storage:
-        trace:
-          backend: s3
-          s3:
-            endpoint: 'minio.monitoring:9000'
-            bucket: 'tempo'
-            access_key: 'tempo'
-            secret_key: 'supersecret'
-            insecure: true
-      
-      overrides:
-        metrics_generator_processors: [ service-graphs, span-metrics ]
+        path: /var/tempo/wal
+        wal:
+        remote_write_flush_deadline: 1m
+        remote_write:
+          - url: 'http://prometheus:9090/api/v1/write'
+    
+    storage:
+      trace:
+        backend: s3
+        s3:
+          endpoint: 'minio.monitoring:9000'
+          bucket: 'tempo'
+          access_key: 'tempo'
+          secret_key: 'supersecret'
+          insecure: true
+    
+    overrides:
+      metrics_generator_processors: [ service-graphs, span-metrics ]
+    
+    #traces: // todo
+    #  otlp:
+    #    http:
+    #      enabled: true
+    #    grpc:
+    #      enabled: true
+    
+    #metaMonitoring: todo
+    #  serviceMonitor:
+    #    enabled: true
+    #    labels:
+    #      prometheus: system

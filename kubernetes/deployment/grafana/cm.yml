@@ -2,72 +2,62 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: datasources
-    labels:
-        app.kubernetes.io/name: grafana
+  name: datasources
+  labels:
+    app.kubernetes.io/name: grafana
 data:
-    tempo.yaml: |-
-      apiVersion: 1
-      datasources:
-        - name: Tempo
-          type: tempo
-          access: proxy
-          editable: true
-          url: 'http://tempo.monitoring:3200'
-          jsonData:
-            httpMethod: GET
-            tracesToLogs:
-              datasourceUid: Loki
-            tracesToLogsV2:
-              datasourceUid: Loki
-            tracesToMetrics:
-              datasourceUid: Prometheus
-            serviceMap:
-              datasourceUid: Prometheus
-            nodeGraph:
-              enabled: true
-            lokiSearch:
-              datasourceUid: Loki
-    loki.yaml: |-
-      apiVersion: 1
-      datasources:
-        - name: Loki
-          type: loki
-          access: proxy
-          editable: true
-          url: 'http://loki.monitoring:3100'
-          jsonData:
-            maxLines: 1000
-            derivedFields:
-              - datasourceUid: Tempo
-                matcherRegex: '"trace_id":"(.+?)"'
-                name: TraceID
-                url: "$${__value.raw}"
-    mimir.yaml: |-
-        apiVersion: 1
-        datasources:
-        - name: Mimir
-          type: prometheus
-          access: proxy
-          editable: true
-          url: http://mimir/prometheus
-          jsonData:
-            manageAlerts: true
-            maxLines: 1000
-            prometheusType: Mimir
-    prometheus.yaml: |-
-        apiVersion: 1
-        datasources:
-        - name: Prometheus
-          type: prometheus
-          access: proxy
-          editable: true
-          isDefault: true
-          url: http://prometheus-server
-          jsonData:
-            exemplarTraceIdDestinations:
-            - name: traceID
-              datasourceUid: Tempo
-            manageAlerts: true
-            prometheusType: Prometheus
-            maxLines: 1000
+  tempo.yaml: |-
+    apiVersion: 1
+    datasources:
+      - name: 'Tempo'
+        type: 'tempo'
+        uid: 'tempo'
+        access: 'proxy'
+        editable: true
+        isDefault: true
+        url: 'http://tempo.monitoring:3200'
+        jsonData:
+          httpMethod: GET
+          tracesToLogs:
+            datasourceUid: 'loki'
+          tracesToLogsV2:
+            datasourceUid: 'loki'
+          tracesToMetrics:
+            datasourceUid: 'prometheus'
+          serviceMap:
+            datasourceUid: 'prometheus'
+          nodeGraph:
+            enabled: true
+          lokiSearch:
+            datasourceUid: 'loki'
+  loki.yaml: |-
+    apiVersion: 1
+    datasources:
+      - name: 'Loki'
+        type: 'loki'
+        uid: 'loki'
+        access: 'proxy'
+        editable: false
+        url: 'http://loki.monitoring:3100'
+        jsonData:
+          derivedFields:
+            - datasourceUid: 'tempo'
+              matcherRegex: '"traceid":"([a-f0-9]{32})"'
+              name: 'TraceID'
+              url: "$${__value.raw}"
+  prometheus.yaml: |-
+    apiVersion: 1
+    datasources:
+      - name: 'Prometheus'
+        uid: 'prometheus'
+        type: 'prometheus'
+        access: 'proxy'
+        editable: false
+        url: 'http://prometheus:9090'
+        jsonData:
+          httpMethod: GET
+          exemplarTraceIdDestinations:
+            - datasourceUid: 'tempo'
+              name: trace_id
+          manageAlerts: true
+          maxLines: 1000

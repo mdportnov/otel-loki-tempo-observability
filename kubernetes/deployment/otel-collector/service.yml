@@ -8,10 +8,10 @@ metadata:
     component: otel-collector
 spec:
   ports:
-    - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
-      port: 4317
-      protocol: TCP
-      targetPort: 4317
+    #    - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
+    #      port: 4317
+    #      protocol: TCP
+    #      targetPort: 4317
     - name: otlp-http # Default endpoint for OpenTelemetry HTTP receiver.
       port: 4318
       protocol: TCP
@@ -24,5 +24,14 @@ spec:
       port: 13133
       protocol: TCP
       targetPort: 13133
+    - name: prometheus-collector-metrics # Prometheus' metrics exposed by the collector
+      port: 8888
+      protocol: TCP
+      targetPort: 8888
+    - name: prometheus-metrics # Prometheus exporter metrics
+      port: 8889
+      protocol: TCP
+      targetPort: 8889
+
   selector:
     component: otel-collector

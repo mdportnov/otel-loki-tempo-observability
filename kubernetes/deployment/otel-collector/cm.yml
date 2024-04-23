@@ -15,38 +15,57 @@ data:
     
     processors:
       batch: # batch metrics before sending to reduce API usage
-        timeout: 3s
+        timeout: 2s
+      
+      resource:
+        # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/lokiexporter/README.md
+        attributes:
+          - action: insert
+            key: loki.resource.labels
+            value: service.name
+          - action: delete
+            key: process.command_args
     
     exporters:
+      prometheusremotewrite:
+        endpoint: "http://prometheus:9090/api/v1/write"
       prometheus:
-        endpoint: "0.0.0.0:8889" # setup later
+        endpoint: ':8889'
+        send_timestamps: true
+        enable_open_metrics: true # enabling exemplars
       logging:
         loglevel: debug
       otlp:
-        endpoint: "http://tempo:4317"
+        endpoint: 'http://tempo:4317'
         tls:
           insecure: true
       loki:
-        endpoint: "http://loki:3100/loki/api/v1/push"
+        endpoint: 'http://loki:3100/loki/api/v1/push'
+        default_labels_enabled:
+          exporter: true
+          instance: true
+          level: true
+          job: false
     
     extensions:
       health_check:
       zpages:
-
+    
     service:
       telemetry:
         logs:
-          level: "debug"
+          level: 'debug'
       extensions: [ health_check, zpages ]
       pipelines:
         metrics:
           receivers: [ otlp ]
-          processors: [ batch ]
-          exporters: [ prometheus ]
+          processors: [ batch, resource ]
+          exporters: [ prometheus, prometheusremotewrite ]
         traces:
           receivers: [ otlp ]
-          processors: [ batch ]
+          processors: [ batch, resource ]
           exporters: [ otlp ]
         logs:
           receivers: [ otlp ]
+          processors: [ resource ]
           exporters: [ loki ]
